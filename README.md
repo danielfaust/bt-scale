@@ -83,11 +83,11 @@ All the `time` fields contain the *localized* ISO format (the default locale of 
 
 <u>Live measurements</u>
 
-You should generally avoid using live measurement, because it is far more efficient to just stand on the scale and let the scale store the measurement in its internal storage, and the next time the script runs it will download all the measurements. The scale needs to be manually woken up so that the script can connect to it, I think that this is a problem with `gatttool`, which this script makes use of. Something related to active vs passive discovery, `gatttool` performs a passive discovery, while Android defaults to active. If you step on the scale and do a measurement, without this script, then the scale stays awake for about 15 seconds, which is a good time to start this script.
+You should generally avoid using live measurement, because it is far more efficient to just stand on the scale and let the scale store the measurement in its internal storage, and the next time the script runs it will download all the measurements. The scale needs to be manually woken up so that the script can connect to it, I think that this is a problem with `gatttool`, which this script makes use of. If you step on the scale and do a measurement, without this script, then the scale stays awake for about 15 seconds, which is a good time to start this script.
 
 
 
-Live measurements do no harm, but are problematic. If you want to perform a live measurement, then you need to define the `alias`  on which this measurement will be made. This alias then **must** be in the *users.py* file in the USER_MAPPING and the corresponding `uid` in the USERS list. There are safeguards built into the script if an alias cannot be resolved to a USERS list entry. It then simply does not start a live measurement, but only behave as if it were `None`
+Live measurements do no harm, but can be problematic. If you want to perform a live measurement, then you need to define the `alias`  on which this measurement will be made. This alias then **must** be in the *users.py* file in the USER_MAPPING and the corresponding `uid` in the USERS list. There are safeguards built into the script if an alias cannot be resolved to a USERS list entry. It then simply does not start a live measurement, but only behave as if it were `None`
 
 
 
@@ -107,7 +107,7 @@ The script needs to explicitly tell the scale to delete the measurements that ar
 
 <u>Unknown measurements</u>
 
-The scale may have measurements stored on it where it does not know to which user they belong, probably because the weight- and fat-threshold in the scale couldn't find a corresponding match. These are stored on the scale as unknown measurements. If such measurements are found on the scale, they will be downloaded and stored into a `JSON` file, each time they are encountered. If you set `DO_DELETE_UNKNOWN` to `True`, then these unknown entries will be deleted from the scale after they have been saved into a file. These unknown measurements have limited information stored in them, namely the timestamp, the weight and the inductance. If you would use a smartphone app to assign these unknown measurements to a given user on the scale, these would probably get computed on the scale to form true measurements, with all the complete information a normal measurement contains. This script does not handle these assignments (could be a TODO).
+The scale may have measurements stored on it where it does not know to which user they belong, probably because the weight- and fat-threshold in the scale couldn't find a corresponding match. These are stored on the scale as unknown measurements. If such measurements are found on the scale, they will be downloaded and stored into a `JSON` file, each time they are encountered. If you set `DO_DELETE_UNKNOWN` to `True`, then these unknown entries will be deleted from the scale after they have been saved into a file. These unknown measurements have limited information stored in them, namely the timestamp, the weight and the impedance. If you would use a smartphone app to assign these unknown measurements to a given user on the scale, these would probably get computed on the scale to form true measurements, with all the complete information a normal measurement contains. This script does not handle these assignments.
 
 
 
@@ -151,7 +151,7 @@ USER_MAPPING = {
 USERS = [ # this data is also stored on the scale
   {
     "name": "XY",     # 1 to 3 UPPERCASE LETTERS!
-    "birthday": "1999-01-01",
+    "birthday": "1999-01-23",
     "height": 123,    # cm or foot, depending on scale setting
     "gender": "male", # or "female", depending on the body
     "activity": 3,    # see list in scale.py
@@ -164,15 +164,15 @@ USERS = [ # this data is also stored on the scale
 
 <u>User Management</u>
 
-1) The `uid`  of the user is what defines the user. Any other parameter that gets changed in the file will get uploaded to the scale. If you change the name or the birthday, you may run into problems when you're using a smartphone app in parallel, some of them rely on this information to define a user. This means that you can change the `height` or `activity` even after the user has been added to the scale, in that case the data on the scale will get updated. Are more/less active? Change the `activity` value in the file. You have grown? Change the `height` value in the file. *You will always get prompted before any change is made to the scale*. You can then either `ctrl-c` out of the script, or just type `enter` to abort the script, or type and submit `YES` to upload the changes to the scale. Afterwards the script will exit and will have to be re-run for any other action.
+1. The `uid`  of the user is what defines the user. Any other parameter that gets changed in the file will get uploaded to the scale. If you change the name or the birthday, you may run into problems when you're using a smartphone app in parallel, some of them rely on this information to define a user. This means that you can change the `height` or `activity` even after the user has been added to the scale, in that case the data on the scale will get updated. Are more/less active? Change the `activity` value in the file. You have grown? Change the `height` value in the file. *You will always get prompted before any change is made to the scale*. You can then either `ctrl-c` out of the script, or just type `enter` to abort the script, or type and submit `YES` to upload the changes to the scale. Afterwards the script will exit and will have to be re-run for any other action.
 
 
 
-2) If the scale has a user with an `uid` which is **not** in the *users.py* file, the script will offer you to delete the user from the scale. Only if you then type and submit `YES`, the user will be deleted from the scale and the script exits. For any other entry (`enter` or anything else) the script will display the information of the unknown user, so that you can copy and paste it into the *users.py* file as a new user. Then the script will exit.
+2. If the scale has a user with an `uid` which is **not** in the *users.py* file, the script will offer you to delete the user from the scale. Only if you then type and submit `YES`, the user will be deleted from the scale and the script exits. For any other entry (`enter` or anything else) the script will display the information of the unknown user, so that you can copy and paste it into the *users.py* file as a new user. Then the script will exit.
 
 
 
-3) If the script has a user with an `uid` which is **not** in the scale, then the user will get uploaded to the scale and the script will exit, no questions asked (remember that it's no problem to delete an accidentally added user).
+3. If the script has a user with an `uid` which is **not** in the scale, then the user will get uploaded to the scale and the script will exit, no questions asked (remember that it's no problem to delete an accidentally added user).
 
 
 
@@ -217,19 +217,29 @@ You may want to run the server in a GNU screen session:
 
 **bt-scale.go** and its precompiled (for the Raspberry Pi) executable **bt-scale**
 
-This helper executable has two purposes: 1) to help you find the `mac address` of the scale and 2) to instruct the scale to take a measurement for a specific `uid`. Instructing it to take a measurement turns on the scale for the user and then exits immediately. The measurement then be downloaded with *scale.py*.
+This helper executable has two purposes: 1) to help you find the `mac address` of the scale and 2) to instruct the scale to take a measurement for a specific `uid`. Instructing it to take a measurement turns on the scale for the user and then exits immediately. The measurement could then be downloaded with *scale.py*.
 
-1) `sudo ./bt-scale` will start to print the `mac addresses` of all the Bluetooth LE devices which are nearby, with their respective name, if it is available.
+1. `sudo ./bt-scale` will start to print the `mac addresses` of all the Bluetooth LE devices which are nearby, with their respective name, if it is available.
 
-The Silvercrest SBF75 shows up as `found XX:XX:XX:XX:XX:X | SBF75`.
+   The Silvercrest SBF75 shows up as `found XX:XX:XX:XX:XX:X | SBF75`.
+   
+   ```
+   scanning...
+   found AA:AA:AA:AA:AA:AA | CC-RT-BLE
+   found AA:AA:AA:AA:AA:AA | 
+   found AA:AA:AA:AA:AA:AA | 
+   found AA:AA:AA:AA:AA:AA | CC-RT-BLE
+   found XX:XX:XX:XX:XX:XX | SBF75   
+   found AA:AA:AA:AA:AA:AA | CC-RT-BLE
+   ...
+   ```
 
-2) `sudo ./bt-scale -mac=XX:XX:XX:XX:XX:XX -uid=0000000000001234` will instruct the scale to take a measurement for the user `0000000000001234`.  In this mode there are four possible results: 
+2. `sudo ./bt-scale -mac=XX:XX:XX:XX:XX:XX -uid=0000000000001234` will instruct the scale to take a measurement for the user `0000000000001234`.  In this mode there are four possible results: 
 
-- `disconnected, measurement trigger succeeded`, 
-
-- `disconnected, measurement trigger failed, unknown user id`,
-- `disconnected, measurement trigger failed, unknown reason` and
-- `disconnected, program execution timeout` (probably was never connected to begin with)
+   * `disconnected, measurement trigger succeeded`, 
+   * `disconnected, measurement trigger failed, unknown user id`,
+   * `disconnected, measurement trigger failed, unknown reason` and
+   * `disconnected, program execution timeout` (probably was never connected to begin with)
 
 With the optional flag `-stderr=true` everything but the result will be written to `stderr` instead of to `stdout`, which can be useful for Unix pipes. See how *cronjob.py* makes use of it.
 
@@ -312,7 +322,7 @@ user ack data
 char-write-req 0x002e E7F1340101
 
 ---------------------------------------------
-get user details for T
+get user details for XY
 char-write-req 0x002e E7360000000000001234
 user detail status -> e7 f0 36 00 ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~
 {
@@ -368,6 +378,7 @@ connecting to database...
 storing / updating users...
 storing / updating measurements...
 done.
+
 all done in 4.702 seconds
 ```
 
