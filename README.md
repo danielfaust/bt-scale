@@ -9,10 +9,6 @@ A Python 2.7 script for the Sanitas SBF70 / Silvercrest SBF75 / Beurer BF700 / B
 **scale.py**
 
 ```python
-DEFAULT_SCALE_MAC_ADDRESS = users.SCALE # the users.py file contains the mac address
-DEFAULT_MEASURE_ALIAS = users.ALIAS # DOWNLOAD DATA FROM THE SCALE AND PERFORM A LIVE MEASURING FOR THIS ALIAS
-DEFAULT_MEASURE_ALIAS = None # DO NOT PERFORM A LIVE MEASURING, ONLY DOWNLOAD DATA FROM THE SCALE
-
 # very safe and informative defaults
 DO_CHECK_UNKNOWN = True
 DO_SAVE_UNKNOWN = True
@@ -26,11 +22,7 @@ LOG_PEXPECT  = False # may be helpful with debugging
 
 
 
-The script *scale.py* can be executed directly via `python scale.py`. Before you do this, you need to adjust the default Bluetooth LE address of the scale. You can find this `mac address` with the bundled executable `bt-scale` or any smartphone ble-scanner like <https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner>
-
-
-
-Initially it is highly recommended to leave `DEFAULT_MEASURE_ALIAS` set to `None`. This means that the script will not start a live measurement, but only fetch data from the scale, or adjust user properties.
+The script *scale.py* can be executed directly via `python scale.py`. Before you do this, you need to adjust the default Bluetooth LE address of the scale in the file *users.py*. You can find this `mac address` with the bundled executable `bt-scale` or any smartphone ble-scanner like <https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner>. Scroll way down for info on `bt-scale`.
 
 
 
@@ -73,7 +65,7 @@ A successful readout would result in the following information:
 
 
 
-If it were a live measurement, then `measurement-weight` with the stable weight and `measurement-weights` with an array of all the weights leading to the stable weight would also be found in this `JSON` object, as well as a `measurement` object containing the data of the live measurement. Maybe those live weight readings could be live-streamed via MQTT to a smartwatch or something for live monitoring.
+If it were a live measurement (as compared to a simple readout of the scale), then `measurement-weight` with the stable weight and `measurement-weights` with an array of all the weights leading to the stable weight would also be found in this `JSON` object, as well as a `measurement` object containing the data of the live measurement.
 
 
 
@@ -83,7 +75,7 @@ All the `time` fields contain the *localized* ISO format (the default locale of 
 
 <u>Live measurements</u>
 
-You should generally avoid using live measurement, because it is far more efficient to just stand on the scale and let the scale store the measurement in its internal storage, and the next time the script runs it will download all the measurements. The scale needs to be manually woken up so that the script can connect to it, I think that this is a problem with `gatttool`, which this script makes use of. If you step on the scale and do a measurement, without this script, then the scale stays awake for about 15 seconds, which is a good time to start this script.
+You should generally avoid using live measurement, because it is far more efficient to just stand on the scale and let the scale store the measurement in its internal storage, and the next time the script runs (possibly through a `cronjob`) it will download all the measurements. The scale needs to be manually woken up so that the script can connect to it, I think that this is a problem with `gatttool`, which this script makes use of. If you step on the scale and do a measurement, without this script, then the scale stays awake for about 15 seconds, which is a good time to start this script. The helper executable `bt-scale` is also capable of waking up the scale.
 
 
 
@@ -91,7 +83,7 @@ Live measurements do no harm, but can be problematic. If you want to perform a l
 
 
 
-The main problem with live measurements is that you need to know when to stand on the scale. If you stand on the scale while any other commands are being executed (like get the scale status, download stored measurements), then the scale aborts those commands and starts issuing weight measuring notifications. In that case, the command would need to get replayed, but this script doesn't handle this (apparently smartphone apps also don't handle this). So you either need to keep an eye on the script, which tells you when you can step on the scale, or watch the bottom left corner of the scale for your (up-to-)three-letter username to appear on the scale. It's hard to read on the scale. So it's best to leave live measurements deactivated and trigger the script right after the bubbles on the scale display have moved to the right, just when the summary shows up. During this entire time, while the summary shows, the script can connect without problems to the scale and download the fresh measurement.
+*The main problem with live measurements is that you need to know when to stand on the scale.* If you stand on the scale while any other commands are being executed (like get the scale status, download stored measurements), then the scale aborts those commands and starts issuing weight measuring notifications. In that case, the command would need to get replayed, but this script doesn't handle this. So you either need to keep an eye on the script, which tells you when you can step on the scale, or watch the bottom left corner of the scale for your (up-to-)three-letter user name to appear on the scale. It's hard to read that on the unlit scale. So it's best to leave live measurements deactivated and trigger the script right after the bubbles on the scale display have moved to the right, just when the summary shows up (or with a `cronjob` at night). During this entire time, while the summary shows, the script can connect without problems to the scale and download the fresh measurement.
 
 
 
@@ -140,25 +132,33 @@ You could calculate all the other parameters with this information, if you know 
 
 **users.py**
 
+This file could well be named *config.py*.
+
 ```python
-SCALE = 'XX:XX:XX:XX:XX:XX'  # mac address of the scale
-ALIAS = 'somebody' # default alias to use
+SCALE = 'XX:XX:XX:XX:XX:XX' # mac address of the scale
+
+#ALIAS = "somebody" # by default, request a live measurement for "somebody"
+ALIAS = None # by default, do not request a live measurement
 
 USER_MAPPING = {
-  "somebody": "0000000000001234", # map alias somebody to uid 0000000000001234
+  #"somebody": "0000000000001234",
 }
 
 USERS = [ # this data is also stored on the scale
-  {
-    "name": "XY",     # 1 to 3 UPPERCASE LETTERS!
-    "birthday": "1999-01-23",
-    "height": 123,    # cm or foot, depending on scale setting
-    "gender": "male", # or "female", depending on the body
-    "activity": 3,    # see list in scale.py
-    "uid": "0000000000001234" # MUST BE 16 hexadecimal characters!
-  },
+  #{
+  #  "name": "XY",             # 1 to 3 UPPERCASE LETTERS!
+  #  "birthday": "1999-01-23",
+  #  "height": 123,            # cm or foot, depending on scale setting
+  #  "gender": "male",         # or "female", depending on the body
+  #  "activity": 3,            # see list in scale.py
+  #  "uid": "0000000000001234" # MUST BE 16 hexadecimal characters!
+  #},
 ]
 ```
+
+
+
+Initially it is highly recommended to leave `ALIAS` set to `None`. This means that the script will not start a live measurement, but only fetch data from the scale, or adjust user properties.
 
 
 
