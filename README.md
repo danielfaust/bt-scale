@@ -37,7 +37,7 @@ A successful readout would result in the following information:
   "users": [
     {
       "uid": "0000000000001234", 
-      "name": "T", 
+      "name": "XY", 
       "birthday": "1999-01-23", 
       "height": 123, 
       "gender": "male", 
