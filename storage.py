@@ -37,7 +37,7 @@ def store_readout_to_file(readout):
   if 'measurements' in readout:
     measurements = copy.deepcopy(readout['measurements'])
   if 'measurement' in readout:
-    measurements.append(copy.deepcopy(readout['measurements']))
+    measurements.append(copy.deepcopy(readout['measurement']))
   print 'storing measurements...'
   for measurement in measurements:
     with open('measurements-' + measurement['uid'] + '.json', 'a') as f:
@@ -80,7 +80,7 @@ def store_readout_to_database(readout):
   if 'measurements' in readout:
     measurements = copy.deepcopy(readout['measurements'])
   if 'measurement' in readout:
-    measurements.append(copy.deepcopy(readout['measurements']))
+    measurements.append(copy.deepcopy(readout['measurement']))
   for measurement in measurements:
     if 'scale' in readout and 'battery' in readout['scale']:
       # add the scale battery level to each measurement
