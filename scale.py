@@ -527,28 +527,29 @@ def start_measurement_script(scale_mac_address=None, measure_alias=None):
     ###################################################
     # GET USER DETAILS
     ###################################################
-    
-    for user in readout['users']:
-      
-      _current_user_id = user['uid']
-      
-      #-----------------------------------------
-      if VERBOSE_COMM: print ''
-      if VERBOSE_COMM: print '---------------------------------------------'
-      if VERBOSE_COMM: print 'get user details for ' + user['name']
-      cmd = WRITE_REQ + ('E7 36 ' + _current_user_id).replace(' ', '')
-      if VERBOSE_COMM: print cmd
-      child.sendline(cmd)
-      user_detail_status = read_line(child)
-      check_status(user_detail_status, 'user detail')
-      if VERBOSE_COMM: print 'user detail status -> ' + user_detail_status
-      user_detail_status = user_detail(user_detail_status)
-      user_detail_status['uid'] = _current_user_id
-      if VERBOSE_COMM: print json.dumps(user_detail_status, indent=2)
-      for key, value in user_detail_status.items():
-        if key not in ['name', 'uid']:
-          user[key] = value
-      del user['year']
+
+    if 'users' in readout:
+      for user in readout['users']:
+        
+        _current_user_id = user['uid']
+        
+        #-----------------------------------------
+        if VERBOSE_COMM: print ''
+        if VERBOSE_COMM: print '---------------------------------------------'
+        if VERBOSE_COMM: print 'get user details for ' + user['name']
+        cmd = WRITE_REQ + ('E7 36 ' + _current_user_id).replace(' ', '')
+        if VERBOSE_COMM: print cmd
+        child.sendline(cmd)
+        user_detail_status = read_line(child)
+        check_status(user_detail_status, 'user detail')
+        if VERBOSE_COMM: print 'user detail status -> ' + user_detail_status
+        user_detail_status = user_detail(user_detail_status)
+        user_detail_status['uid'] = _current_user_id
+        if VERBOSE_COMM: print json.dumps(user_detail_status, indent=2)
+        for key, value in user_detail_status.items():
+          if key not in ['name', 'uid']:
+            user[key] = value
+        del user['year']
     
     ###################################################
     # PARTITION USERS
@@ -567,9 +568,9 @@ def start_measurement_script(scale_mac_address=None, measure_alias=None):
             users_in_file_and_in_scale[file_user['uid']] = (file_user, scale_user)
         if not scale_user_in_file:
           users_in_scale_but_not_in_file.append(scale_user)
-      for file_user in USERS:
-        if file_user['uid'] not in users_in_file_and_in_scale:
-          users_in_file_but_not_in_scale.append(file_user)
+    for file_user in USERS:
+      if file_user['uid'] not in users_in_file_and_in_scale:
+        users_in_file_but_not_in_scale.append(file_user)
     
     ###################################################
     # USERS IN SCALE BUT NOT IN FILE
@@ -748,50 +749,52 @@ def start_measurement_script(scale_mac_address=None, measure_alias=None):
     ###################################################
     # READ STORED MESSAGES FOR KNOWN USERS
     ###################################################
-    
-    for user in readout['users']:
-      
-      _current_user_id = user['uid']
-      
-      #-----------------------------------------
-      if VERBOSE_COMM: print ''
-      if VERBOSE_COMM: print '---------------------------------------------'
-      if VERBOSE_COMM: print 'request saved measurements for ' + user['name']
-      cmd = WRITE_REQ + ('E7 41 ' + _current_user_id).replace(' ', '')
-      if VERBOSE_COMM: print cmd
-      child.sendline(cmd)
-      measurements_status = read_line(child)
-      check_status(measurements_status, 'measurements')
-      measurements_count = int(measurements_status[9:11], 16)
-      if VERBOSE_COMM: print 'measurements status -> ' + measurements_status, '->', measurements_count/2, 'stored measurements'
-      if measurements_count > 0:
+
+    if 'users' in readout:
+
+      for user in readout['users']:
+        
+        _current_user_id = user['uid']
+        
         #-----------------------------------------
-        readout['measurements'] = []
-        data = []
-        for i in range(measurements_count):
-          measurement_status = read_line(child)
-          check_status(measurement_status, 'measurement')
-          if VERBOSE_COMM: print 'measurement', i+1, measurement_status
-          if i % 2 == 0:
-            data.append(measurement_status)
-          if i % 2 == 1:
-            data.append(measurement_status)
-            data = measurement(data)
-            data['uid'] = _current_user_id
-            if VERBOSE_COMM: print json.dumps(data, indent=2)
-            readout['measurements'].append(data)
-            data = []
-          cmd = WRITE_REQ + 'E7 F1 42 {:02X} {:02X}'.format(measurements_count, i+1).replace(' ', '')
-          if VERBOSE_COMM: print cmd
-          child.sendline(cmd)
-        #-----------------------------------------
-        if DO_DELETE_MEASUREMENTS:
-          if VERBOSE_COMM: print 'delete saved measurements for ' + user['name']
-          cmd = WRITE_REQ + ('E7 43 ' + _current_user_id).replace(' ', '')
-          if VERBOSE_COMM: print cmd
-          child.sendline(cmd)
-          child.expect("0x002e value: e7 f0 43 00", timeout=4)
-          if VERBOSE_COMM: print 'deletion ok'
+        if VERBOSE_COMM: print ''
+        if VERBOSE_COMM: print '---------------------------------------------'
+        if VERBOSE_COMM: print 'request saved measurements for ' + user['name']
+        cmd = WRITE_REQ + ('E7 41 ' + _current_user_id).replace(' ', '')
+        if VERBOSE_COMM: print cmd
+        child.sendline(cmd)
+        measurements_status = read_line(child)
+        check_status(measurements_status, 'measurements')
+        measurements_count = int(measurements_status[9:11], 16)
+        if VERBOSE_COMM: print 'measurements status -> ' + measurements_status, '->', measurements_count/2, 'stored measurements'
+        if measurements_count > 0:
+          #-----------------------------------------
+          readout['measurements'] = []
+          data = []
+          for i in range(measurements_count):
+            measurement_status = read_line(child)
+            check_status(measurement_status, 'measurement')
+            if VERBOSE_COMM: print 'measurement', i+1, measurement_status
+            if i % 2 == 0:
+              data.append(measurement_status)
+            if i % 2 == 1:
+              data.append(measurement_status)
+              data = measurement(data)
+              data['uid'] = _current_user_id
+              if VERBOSE_COMM: print json.dumps(data, indent=2)
+              readout['measurements'].append(data)
+              data = []
+            cmd = WRITE_REQ + 'E7 F1 42 {:02X} {:02X}'.format(measurements_count, i+1).replace(' ', '')
+            if VERBOSE_COMM: print cmd
+            child.sendline(cmd)
+          #-----------------------------------------
+          if DO_DELETE_MEASUREMENTS:
+            if VERBOSE_COMM: print 'delete saved measurements for ' + user['name']
+            cmd = WRITE_REQ + ('E7 43 ' + _current_user_id).replace(' ', '')
+            if VERBOSE_COMM: print cmd
+            child.sendline(cmd)
+            child.expect("0x002e value: e7 f0 43 00", timeout=4)
+            if VERBOSE_COMM: print 'deletion ok'
     
     ###################################################
     # START MEASURING
